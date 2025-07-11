@@ -1,11 +1,11 @@
 <?php
-/* Template Name: Blockchain Test */
+/* Template Name: Blockchain */
 get_header();
 ?>
 
 <main id="main" class="site-main">
   <div class="container">
-    <h1>Регистрация НКО</h1>
+    <h1>Блокчейн тест</h1>
     <button id="connect-metamask" style="background:#f6851b;color:#fff;padding:12px 24px;border:none;border-radius:8px;font-size:18px;cursor:pointer;margin-right:10px;">
       Подключить Кошелек
     </button>
@@ -74,6 +74,7 @@ get_header();
       
       // Адрес владельца контракта
       const contractOwner = "0xB98BC23f1EdDb754d01DBc7B62B28039eC9A0cD9";
+
       // Функция для получения курса ETH
       async function getEthPrice() {
         try {
@@ -648,4 +649,4 @@ get_header();
   </div>
 </main>
 
-<?php get_footer(); ?>
+<?php get_footer(); ?> 
