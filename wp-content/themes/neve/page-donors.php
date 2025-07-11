@@ -54,6 +54,29 @@ get_header();
       </div>
     </div>
 
+    <!-- Таблица моих донатов -->
+    <div id="my-donations-container" style="display:none;margin-top:40px;background:#fff;border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+      <div style="background:#f8f9fa;padding:15px;border-bottom:1px solid #ddd;">
+        <h3 style="margin:0;">Мои донаты</h3>
+      </div>
+      <div id="my-donations-table-wrap">
+        <table id="my-donations-table" style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:#f8f9fa;">
+              <th style="padding:12px;text-align:left;border-bottom:1px solid #ddd;">Организация</th>
+              <th style="padding:12px;text-align:left;border-bottom:1px solid #ddd;">Сумма (ETH)</th>
+              <th style="padding:12px;text-align:left;border-bottom:1px solid #ddd;">Транзакция</th>
+            </tr>
+          </thead>
+          <tbody id="my-donations-table-body">
+            <!-- Данные будут загружены динамически -->
+          </tbody>
+        </table>
+        <div id="my-donations-loading" style="padding:20px;text-align:center;color:#666;display:none;">Загрузка донатов...</div>
+        <div id="my-donations-empty" style="padding:20px;text-align:center;color:#666;display:none;">Донатов не найдено</div>
+      </div>
+    </div>
+
     <!-- Модальное окно для пожертвования -->
     <div id="donation-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;">
       <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:30px;border-radius:8px;min-width:400px;max-width:500px;">
@@ -62,8 +85,8 @@ get_header();
         
         <div style="margin:20px 0;">
           <label for="donation-amount" style="display:block;margin-bottom:5px;font-weight:bold;">Сумма пожертвования (ETH):</label>
-          <input type="number" id="donation-amount" min="0.001" step="0.001" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:16px;">
-          <small style="color:#666;">Минимальная сумма: 0.001 ETH</small>
+          <input type="number" id="donation-amount" min="0.0001" step="0.0001" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:16px;">
+          <small style="color:#666;">Минимальная сумма: 0.0001 ETH</small>
         </div>
         
         <div style="background:#e7f3ff;padding:15px;border-radius:4px;margin:15px 0;">
@@ -92,16 +115,58 @@ get_header();
       let signer = null;
       let allNGOs = []; // Все НКО
       let filteredNGOs = []; // Отфильтрованные НКО
+      let isMetamaskConnected = false;
       
       // ABI для смарт-контракта
-      const contractABI = [{"inputs":[{"internalType":"address","name":"admin","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"string","name":"name","type":"string"}],"name":"CharityOrganizationIsNotDefined","type":"error"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},{"inputs":[],"name":"ZeroAddress","type":"error"},{"inputs":[],"name":"ZeroAmount","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"string","name":"name","type":"string"}],"name":"CharityRegistered","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"donor","type":"address"},{"indexed":true,"internalType":"address","name":"charity","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"address","name":"token","type":"address"}],"name":"DonationReceived","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"inputs":[{"internalType":"string","name":"","type":"string"}],"name":"charities","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"name","type":"string"}],"name":"deleteOrganization","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"organizationName","type":"string"}],"name":"donateETH","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"string","name":"organizationName","type":"string"},{"internalType":"address","name":"addressToken","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"donateToken","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"name","type":"string"}],"name":"isOrganizationRegistered","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"addressCheck","type":"address"}],"name":"isZeroAddress","outputs":[],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"isZeroAmount","outputs":[],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"address","name":"wallet","type":"address"}],"name":"registerOrganization","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+      const contractABI = [
+        {"inputs":[{"internalType":"address","name":"admin","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
+        {"inputs":[{"internalType":"string","name":"name","type":"string"}],"name":"CharityOrganizationIsNotDefined","type":"error"},
+        {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},
+        {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},
+        {"inputs":[],"name":"ZeroAddress","type":"error"},
+        {"inputs":[],"name":"ZeroAmount","type":"error"},
+        {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"string","name":"name","type":"string"}],"name":"CharityRegistered","type":"event"},
+        {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"donor","type":"address"},{"indexed":true,"internalType":"address","name":"charity","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"address","name":"token","type":"address"}],"name":"DonationReceived","type":"event"},
+        {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},
+        {"inputs":[{"internalType":"string","name":"","type":"string"}],"name":"charities","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"string","name":"name","type":"string"}],"name":"deleteOrganization","outputs":[],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"string","name":"organizationName","type":"string"}],"name":"donateETH","outputs":[],"stateMutability":"payable","type":"function"},
+        {"inputs":[{"internalType":"string","name":"organizationName","type":"string"},{"internalType":"address","name":"addressToken","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"donateToken","outputs":[],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"string","name":"name","type":"string"}],"name":"isOrganizationRegistered","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"address","name":"addressCheck","type":"address"}],"name":"isZeroAddress","outputs":[],"stateMutability":"pure","type":"function"},
+        {"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"isZeroAmount","outputs":[],"stateMutability":"pure","type":"function"},
+        {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"address","name":"wallet","type":"address"}],"name":"registerOrganization","outputs":[],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}
+      ];
       
       // Адрес смарт-контракта
-      const contractAddress = "0x429f97aC898ed39e020D98492A75D8B0c0c7d2a9";
+      const contractAddress = "0xe0f7ebAFe0F8D31a1BE5EE685D9a0e30CA64307b";
       
       // Адрес сборщика комиссий
       const feeCollector = "0xB98BC23f1EdDb754d01DBc7B62B28039eC9A0cD9";
       
+      // Известные организации из блокчейна
+      const knownOrganizations = [
+        {
+          name: "Lighthouse Charity",
+          address: "0x889A54728511DAC5f5399584Fd014Ef57e634894"
+        },
+        {
+          name: "Green Tomorrow Foundation", 
+          address: "0x2F1EE9B5CC1464Bb49a67c52C387493d79256230"
+        },
+        {
+          name: "Little Miracles",
+          address: "0x700114A467b43B094C84196A9FdCb4dfA90543ec"
+        },
+        {
+          name: "Global Kindness Network",
+          address: "0x4223E67a1DFdB6A2D0C299Ba5EA03a57d5865Be6"
+        }
+      ];
+
       // Тестовые НКО для демонстрации
       const testNGOs = [
         {
@@ -166,12 +231,16 @@ get_header();
       // Функция для получения баланса
       async function getBalance(address) {
         try {
+          console.log('Получаем баланс для адреса:', address);
           const balance = await window.ethereum.request({
             method: 'eth_getBalance',
             params: [address, 'latest']
           });
+          console.log('Баланс в wei:', balance);
+          
           // Конвертируем из wei в ETH
           const balanceInEth = parseInt(balance, 16) / Math.pow(10, 18);
+          console.log('Баланс в ETH:', balanceInEth);
           return balanceInEth.toFixed(4);
         } catch (error) {
           console.error('Ошибка получения баланса:', error);
@@ -179,18 +248,64 @@ get_header();
         }
       }
 
+      // Функция инициализации провайдера (публичный или Metamask)
+      function initProvider() {
+        if (window.ethereum && isMetamaskConnected) {
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          signer = provider.getSigner();
+        } else {
+          // Публичный RPC Arbitrum
+          provider = new ethers.providers.JsonRpcProvider('https://arb1.arbitrum.io/rpc');
+          signer = null;
+        }
+      }
+
       // Функция загрузки НКО из смарт-контракта
       async function loadNGOsFromContract() {
-        if (!provider) return [];
+        if (!provider) {
+          console.log('Провайдер не подключен, возвращаем пустой массив');
+          return [];
+        }
         
         try {
+          console.log('Создаем контракт с адресом:', contractAddress);
           const contract = new ethers.Contract(contractAddress, contractABI, provider);
           const ngos = [];
           
-          // Здесь должна быть логика получения всех НКО из контракта
-          // Пока что возвращаем пустой массив
           console.log('Загрузка НКО из смарт-контракта...');
+          console.log('Проверяем организации:', knownOrganizations);
           
+          // Проверяем каждую известную организацию
+          for (const org of knownOrganizations) {
+            try {
+              console.log(`Проверяем организацию: ${org.name}`);
+              
+              // Проверяем, зарегистрирована ли организация в контракте
+              const isRegistered = await contract.isOrganizationRegistered(org.name);
+              console.log(`Организация ${org.name} зарегистрирована:`, isRegistered);
+              
+              if (isRegistered) {
+                // Получаем баланс организации
+                const balance = await getBalance(org.address);
+                console.log(`Баланс ${org.name}:`, balance);
+                
+                ngos.push({
+                  name: org.name,
+                  address: org.address,
+                  balance: balance,
+                  isFromBlockchain: true
+                });
+                
+                console.log(`Организация ${org.name} найдена в блокчейне`);
+              } else {
+                console.log(`Организация ${org.name} НЕ найдена в блокчейне`);
+              }
+            } catch (error) {
+              console.error(`Ошибка проверки организации ${org.name}:`, error);
+            }
+          }
+          
+          console.log(`Загружено ${ngos.length} организаций из блокчейна:`, ngos);
           return ngos;
         } catch (error) {
           console.error('Ошибка загрузки НКО из контракта:', error);
@@ -198,10 +313,12 @@ get_header();
         }
       }
 
-      // Функция загрузки всех НКО (тестовые + из контракта)
+      // Функция загрузки всех НКО (тестовые + из блокчейна), сортировка: реальные сверху
       async function loadAllNGOs() {
+        initProvider();
         const contractNGOs = await loadNGOsFromContract();
-        allNGOs = [...testNGOs, ...contractNGOs];
+        // Сортируем: сначала реальные, потом тестовые
+        allNGOs = [...contractNGOs, ...testNGOs];
         filteredNGOs = [...allNGOs];
         renderNGOTable();
       }
@@ -227,6 +344,7 @@ get_header();
             <td style="padding:12px;">
               <strong>${ngo.name}</strong>
               ${ngo.name.includes('Тестовая') ? '<br><small style="color:#ff6b35;">⚠️ Тестовая организация (не из блокчейна)</small>' : ''}
+              ${ngo.isFromBlockchain ? '<br><small style="color:#28a745;">✅ Организация из блокчейна</small>' : ''}
             </td>
             <td style="padding:12px;font-family:monospace;font-size:14px;">${ngo.address}</td>
             <td style="padding:12px;">${ngo.balance} ETH</td>
@@ -307,10 +425,59 @@ get_header();
         }
       }
 
-      // Функция отключения кошелька
+      // --- МОИ ДОНАТЫ ---
+      // Функция загрузки донатов пользователя
+      async function loadMyDonations() {
+        if (!provider || !currentAddress) {
+          document.getElementById('my-donations-container').style.display = 'none';
+          return;
+        }
+        document.getElementById('my-donations-container').style.display = 'block';
+        document.getElementById('my-donations-loading').style.display = 'block';
+        document.getElementById('my-donations-empty').style.display = 'none';
+        const tbody = document.getElementById('my-donations-table-body');
+        tbody.innerHTML = '';
+        try {
+          const contract = new ethers.Contract(contractAddress, contractABI, provider);
+          // Получаем события DonationReceived, где donor == currentAddress
+          const filter = contract.filters.DonationReceived(currentAddress);
+          // Можно ограничить поиск по блокам, если нужно ускорить (например, {fromBlock: 0, toBlock: 'latest'})
+          const events = await contract.queryFilter(filter, 0, 'latest');
+          if (!events.length) {
+            document.getElementById('my-donations-loading').style.display = 'none';
+            document.getElementById('my-donations-empty').style.display = 'block';
+            return;
+          }
+          // Сопоставим адреса организаций с их названиями
+          const addressToName = {};
+          for (const org of knownOrganizations) {
+            addressToName[org.address.toLowerCase()] = org.name;
+          }
+          // Формируем строки таблицы
+          tbody.innerHTML = events.map(ev => {
+            const orgAddr = ev.args.charity.toLowerCase();
+            const orgName = addressToName[orgAddr] || orgAddr;
+            const amountEth = ethers.utils.formatEther(ev.args.amount);
+            const txHash = ev.transactionHash;
+            return `<tr>
+              <td style="padding:12px;">${orgName}</td>
+              <td style="padding:12px;">${parseFloat(amountEth).toFixed(4)}</td>
+              <td style="padding:12px;"><a href='https://arbiscan.io/tx/${txHash}' target='_blank' style='color:#007bff;'>Смотреть</a></td>
+            </tr>`;
+          }).join('');
+          document.getElementById('my-donations-loading').style.display = 'none';
+        } catch (error) {
+          document.getElementById('my-donations-loading').style.display = 'none';
+          document.getElementById('my-donations-empty').style.display = 'block';
+          console.error('Ошибка загрузки донатов:', error);
+        }
+      }
+
+      // Отключение кошелька
       async function disconnectWallet() {
         currentAddress = null;
-        provider = null;
+        isMetamaskConnected = false;
+        initProvider();
         signer = null;
         
         const resultDiv = document.getElementById('metamask-result');
@@ -318,6 +485,9 @@ get_header();
         
         // Обновляем текст кнопки
         document.getElementById('connect-metamask').textContent = 'Подключить Кошелек';
+        // Перезагружаем список НКО (с публичным провайдером)
+        await loadAllNGOs();
+        document.getElementById('my-donations-container').style.display = 'none';
       }
 
       // Обработчик отключения
@@ -346,10 +516,8 @@ get_header();
             }
 
             currentAddress = address;
-            
-            // Инициализируем ethers.js
-            provider = new ethers.providers.Web3Provider(window.ethereum);
-            signer = provider.getSigner();
+            isMetamaskConnected = true;
+            initProvider();
             
             // Получаем баланс
             const balance = await getBalance(address);
@@ -376,8 +544,10 @@ get_header();
             // Обновляем текст кнопки
             document.getElementById('connect-metamask').textContent = 'Переподключить кошелек';
             
-            // Загружаем НКО
+            // Загружаем НКО (с обновленным провайдером)
             await loadAllNGOs();
+            // Загружаем мои донаты
+            await loadMyDonations();
             
           } catch (err) {
             resultDiv.innerHTML = '❌ Ошибка: ' + err.message;
@@ -403,8 +573,8 @@ get_header();
         const ngoName = document.getElementById('modal-ngo-name').textContent.replace('Пожертвование: ', '');
         const ngoAddress = document.getElementById('modal-ngo-address').textContent.replace('Адрес: ', '');
         
-        if (!amount || amount < 0.001) {
-          alert('Введите корректную сумму (минимум 0.001 ETH)');
+        if (!amount || amount < 0.0001) {
+          alert('Введите корректную сумму (минимум 0.0001 ETH)');
           return;
         }
 
@@ -421,6 +591,7 @@ get_header();
           
           // Обновляем список НКО
           await loadAllNGOs();
+          await loadMyDonations(); // Обновляем мои донаты после отправки
           
         } catch (error) {
           alert('❌ Ошибка: ' + error.message);
@@ -432,6 +603,8 @@ get_header();
 
       // Автоматическая загрузка НКО при загрузке страницы
       window.addEventListener('load', function() {
+        isMetamaskConnected = false;
+        initProvider();
         loadAllNGOs();
       });
 
