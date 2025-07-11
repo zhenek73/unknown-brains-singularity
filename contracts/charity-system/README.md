@@ -20,7 +20,7 @@
 ### 1.  Клонирование репозитория
 
 ```bash
-git clone --recurse-submodules  https://github.com/zhenek73/unknown-brains-singularity.git
+git clone --recurse-submodules https://github.com/zhenek73/unknown-brains-singularity.git
 cd unknown-brains-singularity/contracts/charity-system
 ```
 

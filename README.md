@@ -10,6 +10,9 @@
 - **Взаимодействие со смарт-контрактом** - возможность отправки транзакций
 - **Современный дизайн** - адаптивная тема с красивым интерфейсом
 
+
+- **Смарт-контракты** находятся [здесь](https://github.com/zhenek73/unknown-brains-singularity/tree/main/contracts/charity-system)
+
 ## Что внутри
 
 - Конфигурация и скрипты для взаимодействия с Arbitrum
@@ -38,8 +41,8 @@
 
 ### 1. Клонирование репозитория
 ```bash
-git clone https://github.com/your-username/wordpress-web3-project.git
-cd wordpress-web3-project
+git clone --recurse-submodules https://github.com/zhenek73/unknown-brains-singularity.git
+cd unknown-brains-singularity
 ```
 
 ### 2. Установка зависимостей
