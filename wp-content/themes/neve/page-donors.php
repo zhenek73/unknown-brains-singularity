@@ -54,6 +54,29 @@ get_header();
       </div>
     </div>
 
+    <!-- Таблица моих донатов -->
+    <div id="my-donations-container" style="display:none;margin-top:40px;background:#fff;border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+      <div style="background:#f8f9fa;padding:15px;border-bottom:1px solid #ddd;">
+        <h3 style="margin:0;">Мои донаты</h3>
+      </div>
+      <div id="my-donations-table-wrap">
+        <table id="my-donations-table" style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:#f8f9fa;">
+              <th style="padding:12px;text-align:left;border-bottom:1px solid #ddd;">Организация</th>
+              <th style="padding:12px;text-align:left;border-bottom:1px solid #ddd;">Сумма (ETH)</th>
+              <th style="padding:12px;text-align:left;border-bottom:1px solid #ddd;">Транзакция</th>
+            </tr>
+          </thead>
+          <tbody id="my-donations-table-body">
+            <!-- Данные будут загружены динамически -->
+          </tbody>
+        </table>
+        <div id="my-donations-loading" style="padding:20px;text-align:center;color:#666;display:none;">Загрузка донатов...</div>
+        <div id="my-donations-empty" style="padding:20px;text-align:center;color:#666;display:none;">Донатов не найдено</div>
+      </div>
+    </div>
+
     <!-- Модальное окно для пожертвования -->
     <div id="donation-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;">
       <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:30px;border-radius:8px;min-width:400px;max-width:500px;">
@@ -402,6 +425,54 @@ get_header();
         }
       }
 
+      // --- МОИ ДОНАТЫ ---
+      // Функция загрузки донатов пользователя
+      async function loadMyDonations() {
+        if (!provider || !currentAddress) {
+          document.getElementById('my-donations-container').style.display = 'none';
+          return;
+        }
+        document.getElementById('my-donations-container').style.display = 'block';
+        document.getElementById('my-donations-loading').style.display = 'block';
+        document.getElementById('my-donations-empty').style.display = 'none';
+        const tbody = document.getElementById('my-donations-table-body');
+        tbody.innerHTML = '';
+        try {
+          const contract = new ethers.Contract(contractAddress, contractABI, provider);
+          // Получаем события DonationReceived, где donor == currentAddress
+          const filter = contract.filters.DonationReceived(currentAddress);
+          // Можно ограничить поиск по блокам, если нужно ускорить (например, {fromBlock: 0, toBlock: 'latest'})
+          const events = await contract.queryFilter(filter, 0, 'latest');
+          if (!events.length) {
+            document.getElementById('my-donations-loading').style.display = 'none';
+            document.getElementById('my-donations-empty').style.display = 'block';
+            return;
+          }
+          // Сопоставим адреса организаций с их названиями
+          const addressToName = {};
+          for (const org of knownOrganizations) {
+            addressToName[org.address.toLowerCase()] = org.name;
+          }
+          // Формируем строки таблицы
+          tbody.innerHTML = events.map(ev => {
+            const orgAddr = ev.args.charity.toLowerCase();
+            const orgName = addressToName[orgAddr] || orgAddr;
+            const amountEth = ethers.utils.formatEther(ev.args.amount);
+            const txHash = ev.transactionHash;
+            return `<tr>
+              <td style="padding:12px;">${orgName}</td>
+              <td style="padding:12px;">${parseFloat(amountEth).toFixed(4)}</td>
+              <td style="padding:12px;"><a href='https://arbiscan.io/tx/${txHash}' target='_blank' style='color:#007bff;'>Смотреть</a></td>
+            </tr>`;
+          }).join('');
+          document.getElementById('my-donations-loading').style.display = 'none';
+        } catch (error) {
+          document.getElementById('my-donations-loading').style.display = 'none';
+          document.getElementById('my-donations-empty').style.display = 'block';
+          console.error('Ошибка загрузки донатов:', error);
+        }
+      }
+
       // Отключение кошелька
       async function disconnectWallet() {
         currentAddress = null;
@@ -416,6 +487,7 @@ get_header();
         document.getElementById('connect-metamask').textContent = 'Подключить Кошелек';
         // Перезагружаем список НКО (с публичным провайдером)
         await loadAllNGOs();
+        document.getElementById('my-donations-container').style.display = 'none';
       }
 
       // Обработчик отключения
@@ -474,6 +546,8 @@ get_header();
             
             // Загружаем НКО (с обновленным провайдером)
             await loadAllNGOs();
+            // Загружаем мои донаты
+            await loadMyDonations();
             
           } catch (err) {
             resultDiv.innerHTML = '❌ Ошибка: ' + err.message;
@@ -517,6 +591,7 @@ get_header();
           
           // Обновляем список НКО
           await loadAllNGOs();
+          await loadMyDonations(); // Обновляем мои донаты после отправки
           
         } catch (error) {
           alert('❌ Ошибка: ' + error.message);
