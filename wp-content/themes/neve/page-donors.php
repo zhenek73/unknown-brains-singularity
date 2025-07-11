@@ -62,8 +62,8 @@ get_header();
         
         <div style="margin:20px 0;">
           <label for="donation-amount" style="display:block;margin-bottom:5px;font-weight:bold;">Сумма пожертвования (ETH):</label>
-          <input type="number" id="donation-amount" min="0.001" step="0.001" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:16px;">
-          <small style="color:#666;">Минимальная сумма: 0.001 ETH</small>
+          <input type="number" id="donation-amount" min="0.0001" step="0.0001" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:16px;">
+          <small style="color:#666;">Минимальная сумма: 0.0001 ETH</small>
         </div>
         
         <div style="background:#e7f3ff;padding:15px;border-radius:4px;margin:15px 0;">
@@ -94,14 +94,55 @@ get_header();
       let filteredNGOs = []; // Отфильтрованные НКО
       
       // ABI для смарт-контракта
-      const contractABI = [{"inputs":[{"internalType":"address","name":"admin","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"string","name":"name","type":"string"}],"name":"CharityOrganizationIsNotDefined","type":"error"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},{"inputs":[],"name":"ZeroAddress","type":"error"},{"inputs":[],"name":"ZeroAmount","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"string","name":"name","type":"string"}],"name":"CharityRegistered","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"donor","type":"address"},{"indexed":true,"internalType":"address","name":"charity","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"address","name":"token","type":"address"}],"name":"DonationReceived","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"inputs":[{"internalType":"string","name":"","type":"string"}],"name":"charities","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"name","type":"string"}],"name":"deleteOrganization","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"organizationName","type":"string"}],"name":"donateETH","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"string","name":"organizationName","type":"string"},{"internalType":"address","name":"addressToken","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"donateToken","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"name","type":"string"}],"name":"isOrganizationRegistered","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"addressCheck","type":"address"}],"name":"isZeroAddress","outputs":[],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"isZeroAmount","outputs":[],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"address","name":"wallet","type":"address"}],"name":"registerOrganization","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+      const contractABI = [
+        {"inputs":[{"internalType":"address","name":"admin","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
+        {"inputs":[{"internalType":"string","name":"name","type":"string"}],"name":"CharityOrganizationIsNotDefined","type":"error"},
+        {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},
+        {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},
+        {"inputs":[],"name":"ZeroAddress","type":"error"},
+        {"inputs":[],"name":"ZeroAmount","type":"error"},
+        {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"string","name":"name","type":"string"}],"name":"CharityRegistered","type":"event"},
+        {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"donor","type":"address"},{"indexed":true,"internalType":"address","name":"charity","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"address","name":"token","type":"address"}],"name":"DonationReceived","type":"event"},
+        {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},
+        {"inputs":[{"internalType":"string","name":"","type":"string"}],"name":"charities","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"string","name":"name","type":"string"}],"name":"deleteOrganization","outputs":[],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"string","name":"organizationName","type":"string"}],"name":"donateETH","outputs":[],"stateMutability":"payable","type":"function"},
+        {"inputs":[{"internalType":"string","name":"organizationName","type":"string"},{"internalType":"address","name":"addressToken","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"donateToken","outputs":[],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"string","name":"name","type":"string"}],"name":"isOrganizationRegistered","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"address","name":"addressCheck","type":"address"}],"name":"isZeroAddress","outputs":[],"stateMutability":"pure","type":"function"},
+        {"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"isZeroAmount","outputs":[],"stateMutability":"pure","type":"function"},
+        {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"address","name":"wallet","type":"address"}],"name":"registerOrganization","outputs":[],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}
+      ];
       
       // Адрес смарт-контракта
-      const contractAddress = "0x429f97aC898ed39e020D98492A75D8B0c0c7d2a9";
+      const contractAddress = "0xe0f7ebAFe0F8D31a1BE5EE685D9a0e30CA64307b";
       
       // Адрес сборщика комиссий
       const feeCollector = "0xB98BC23f1EdDb754d01DBc7B62B28039eC9A0cD9";
       
+      // Известные организации из блокчейна
+      const knownOrganizations = [
+        {
+          name: "Lighthouse Charity",
+          address: "0x889A54728511DAC5f5399584Fd014Ef57e634894"
+        },
+        {
+          name: "Green Tomorrow Foundation", 
+          address: "0x2F1EE9B5CC1464Bb49a67c52C387493d79256230"
+        },
+        {
+          name: "Little Miracles",
+          address: "0x700114A467b43B094C84196A9FdCb4dfA90543ec"
+        },
+        {
+          name: "Global Kindness Network",
+          address: "0x4223E67a1DFdB6A2D0C299Ba5EA03a57d5865Be6"
+        }
+      ];
+
       // Тестовые НКО для демонстрации
       const testNGOs = [
         {
@@ -166,12 +207,16 @@ get_header();
       // Функция для получения баланса
       async function getBalance(address) {
         try {
+          console.log('Получаем баланс для адреса:', address);
           const balance = await window.ethereum.request({
             method: 'eth_getBalance',
             params: [address, 'latest']
           });
+          console.log('Баланс в wei:', balance);
+          
           // Конвертируем из wei в ETH
           const balanceInEth = parseInt(balance, 16) / Math.pow(10, 18);
+          console.log('Баланс в ETH:', balanceInEth);
           return balanceInEth.toFixed(4);
         } catch (error) {
           console.error('Ошибка получения баланса:', error);
@@ -181,16 +226,50 @@ get_header();
 
       // Функция загрузки НКО из смарт-контракта
       async function loadNGOsFromContract() {
-        if (!provider) return [];
+        if (!provider) {
+          console.log('Провайдер не подключен, возвращаем пустой массив');
+          return [];
+        }
         
         try {
+          console.log('Создаем контракт с адресом:', contractAddress);
           const contract = new ethers.Contract(contractAddress, contractABI, provider);
           const ngos = [];
           
-          // Здесь должна быть логика получения всех НКО из контракта
-          // Пока что возвращаем пустой массив
           console.log('Загрузка НКО из смарт-контракта...');
+          console.log('Проверяем организации:', knownOrganizations);
           
+          // Проверяем каждую известную организацию
+          for (const org of knownOrganizations) {
+            try {
+              console.log(`Проверяем организацию: ${org.name}`);
+              
+              // Проверяем, зарегистрирована ли организация в контракте
+              const isRegistered = await contract.isOrganizationRegistered(org.name);
+              console.log(`Организация ${org.name} зарегистрирована:`, isRegistered);
+              
+              if (isRegistered) {
+                // Получаем баланс организации
+                const balance = await getBalance(org.address);
+                console.log(`Баланс ${org.name}:`, balance);
+                
+                ngos.push({
+                  name: org.name,
+                  address: org.address,
+                  balance: balance,
+                  isFromBlockchain: true
+                });
+                
+                console.log(`Организация ${org.name} найдена в блокчейне`);
+              } else {
+                console.log(`Организация ${org.name} НЕ найдена в блокчейне`);
+              }
+            } catch (error) {
+              console.error(`Ошибка проверки организации ${org.name}:`, error);
+            }
+          }
+          
+          console.log(`Загружено ${ngos.length} организаций из блокчейна:`, ngos);
           return ngos;
         } catch (error) {
           console.error('Ошибка загрузки НКО из контракта:', error);
@@ -198,7 +277,7 @@ get_header();
         }
       }
 
-      // Функция загрузки всех НКО (тестовые + из контракта)
+      // Функция загрузки всех НКО (тестовые + из блокчейна)
       async function loadAllNGOs() {
         const contractNGOs = await loadNGOsFromContract();
         allNGOs = [...testNGOs, ...contractNGOs];
@@ -227,6 +306,7 @@ get_header();
             <td style="padding:12px;">
               <strong>${ngo.name}</strong>
               ${ngo.name.includes('Тестовая') ? '<br><small style="color:#ff6b35;">⚠️ Тестовая организация (не из блокчейна)</small>' : ''}
+              ${ngo.isFromBlockchain ? '<br><small style="color:#28a745;">✅ Организация из блокчейна</small>' : ''}
             </td>
             <td style="padding:12px;font-family:monospace;font-size:14px;">${ngo.address}</td>
             <td style="padding:12px;">${ngo.balance} ETH</td>
@@ -403,8 +483,8 @@ get_header();
         const ngoName = document.getElementById('modal-ngo-name').textContent.replace('Пожертвование: ', '');
         const ngoAddress = document.getElementById('modal-ngo-address').textContent.replace('Адрес: ', '');
         
-        if (!amount || amount < 0.001) {
-          alert('Введите корректную сумму (минимум 0.001 ETH)');
+        if (!amount || amount < 0.0001) {
+          alert('Введите корректную сумму (минимум 0.0001 ETH)');
           return;
         }
 
