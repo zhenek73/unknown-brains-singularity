@@ -92,6 +92,7 @@ get_header();
       let signer = null;
       let allNGOs = []; // Все НКО
       let filteredNGOs = []; // Отфильтрованные НКО
+      let isMetamaskConnected = false;
       
       // ABI для смарт-контракта
       const contractABI = [
@@ -224,6 +225,18 @@ get_header();
         }
       }
 
+      // Функция инициализации провайдера (публичный или Metamask)
+      function initProvider() {
+        if (window.ethereum && isMetamaskConnected) {
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          signer = provider.getSigner();
+        } else {
+          // Публичный RPC Arbitrum
+          provider = new ethers.providers.JsonRpcProvider('https://arb1.arbitrum.io/rpc');
+          signer = null;
+        }
+      }
+
       // Функция загрузки НКО из смарт-контракта
       async function loadNGOsFromContract() {
         if (!provider) {
@@ -277,10 +290,12 @@ get_header();
         }
       }
 
-      // Функция загрузки всех НКО (тестовые + из блокчейна)
+      // Функция загрузки всех НКО (тестовые + из блокчейна), сортировка: реальные сверху
       async function loadAllNGOs() {
+        initProvider();
         const contractNGOs = await loadNGOsFromContract();
-        allNGOs = [...testNGOs, ...contractNGOs];
+        // Сортируем: сначала реальные, потом тестовые
+        allNGOs = [...contractNGOs, ...testNGOs];
         filteredNGOs = [...allNGOs];
         renderNGOTable();
       }
@@ -387,10 +402,11 @@ get_header();
         }
       }
 
-      // Функция отключения кошелька
+      // Отключение кошелька
       async function disconnectWallet() {
         currentAddress = null;
-        provider = null;
+        isMetamaskConnected = false;
+        initProvider();
         signer = null;
         
         const resultDiv = document.getElementById('metamask-result');
@@ -398,6 +414,8 @@ get_header();
         
         // Обновляем текст кнопки
         document.getElementById('connect-metamask').textContent = 'Подключить Кошелек';
+        // Перезагружаем список НКО (с публичным провайдером)
+        await loadAllNGOs();
       }
 
       // Обработчик отключения
@@ -426,10 +444,8 @@ get_header();
             }
 
             currentAddress = address;
-            
-            // Инициализируем ethers.js
-            provider = new ethers.providers.Web3Provider(window.ethereum);
-            signer = provider.getSigner();
+            isMetamaskConnected = true;
+            initProvider();
             
             // Получаем баланс
             const balance = await getBalance(address);
@@ -456,7 +472,7 @@ get_header();
             // Обновляем текст кнопки
             document.getElementById('connect-metamask').textContent = 'Переподключить кошелек';
             
-            // Загружаем НКО
+            // Загружаем НКО (с обновленным провайдером)
             await loadAllNGOs();
             
           } catch (err) {
@@ -512,6 +528,8 @@ get_header();
 
       // Автоматическая загрузка НКО при загрузке страницы
       window.addEventListener('load', function() {
+        isMetamaskConnected = false;
+        initProvider();
         loadAllNGOs();
       });
 
