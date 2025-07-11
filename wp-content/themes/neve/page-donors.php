@@ -6,7 +6,7 @@ get_header();
 <main id="main" class="site-main">
   <div class="container">
     <h1>Пожертвования НКО</h1>
-    <p>Выберите организацию и сделайте пожертвование. Наш сервис берет 5% комиссии.</p>
+    <p>Выберите организацию и сделайте пожертвование. Наш сервис берет 3% комиссии.</p>
     
     <!-- Подключение кошелька -->
     <div style="background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:20px;">
@@ -92,7 +92,7 @@ get_header();
         <div style="background:#e7f3ff;padding:15px;border-radius:4px;margin:15px 0;">
           <strong>Информация о комиссии:</strong><br>
           <small>Сумма пожертвования: <span id="donation-sum">0</span> ETH<br>
-          Комиссия сервиса (5%): <span id="service-fee">0</span> ETH<br>
+          Комиссия сервиса (3%): <span id="service-fee">0</span> ETH<br>
           <strong>Итого к отправке: <span id="total-amount">0</span> ETH</strong></small>
         </div>
         
@@ -389,7 +389,7 @@ get_header();
       // Функция обновления расчетов пожертвования
       function updateDonationCalculation() {
         const amount = parseFloat(document.getElementById('donation-amount').value) || 0;
-        const serviceFee = amount * 0.05; // 5% комиссия
+        const serviceFee = amount * 0.03; // 3% комиссия
         const total = amount + serviceFee;
         
         document.getElementById('donation-sum').textContent = amount.toFixed(3);
